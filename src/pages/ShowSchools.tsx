@@ -1,75 +1,44 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Mail, Phone, School } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MapPin, Mail, Phone, School, Search, Filter, Trash2, Plus } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import heroImage from "@/assets/hero-education.jpg";
-
-// Mock data for demonstration
-const mockSchools = [
-  {
-    id: 1,
-    name: "Greenwood International School",
-    address: "123 Education Street, Knowledge Park",
-    city: "Mumbai",
-    state: "Maharashtra",
-    contact: "9876543210",
-    email_id: "info@greenwood.edu",
-    image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&h=300"
-  },
-  {
-    id: 2,
-    name: "St. Mary's Convent School",
-    address: "456 Learning Avenue, Education Hub",
-    city: "Delhi",
-    state: "Delhi",
-    contact: "8765432109",
-    email_id: "admissions@stmarys.edu",
-    image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=400&h=300"
-  },
-  {
-    id: 3,
-    name: "Riverside Public School",
-    address: "789 Academic Road, Scholar City",
-    city: "Bangalore",
-    state: "Karnataka",
-    contact: "7654321098",
-    email_id: "contact@riverside.edu",
-    image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=400&h=300"
-  },
-  {
-    id: 4,
-    name: "Bright Future Academy",
-    address: "321 Future Lane, Innovation District",
-    city: "Pune",
-    state: "Maharashtra",
-    contact: "6543210987",
-    email_id: "hello@brightfuture.edu",
-    image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=400&h=300"
-  },
-  {
-    id: 5,
-    name: "Excellence High School",
-    address: "654 Excellence Blvd, Success Valley",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    contact: "5432109876",
-    email_id: "info@excellence.edu",
-    image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?auto=format&fit=crop&w=400&h=300"
-  },
-  {
-    id: 6,
-    name: "Golden Gate School",
-    address: "987 Golden Street, Prosperity Area",
-    city: "Kolkata",
-    state: "West Bengal",
-    contact: "4321098765",
-    email_id: "admissions@goldengate.edu",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=400&h=300"
-  }
-];
+import { useSchools } from "@/contexts/SchoolContext";
+import { toast } from "@/hooks/use-toast";
 
 const ShowSchools = () => {
+  const { schools, deleteSchool } = useSchools();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
+
+  // Filter schools based on search term and state
+  const filteredSchools = schools.filter(school => {
+    const matchesSearch = 
+      school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      school.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      school.address.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesState = !stateFilter || school.state === stateFilter;
+    
+    return matchesSearch && matchesState;
+  });
+
+  // Get unique states for filter
+  const uniqueStates = [...new Set(schools.map(school => school.state))].sort();
+
+  const handleDeleteSchool = (schoolId: string, schoolName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${schoolName}"?`)) {
+      deleteSchool(schoolId);
+      toast({
+        title: "School Deleted",
+        description: `${schoolName} has been removed successfully.`,
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -95,22 +64,45 @@ const ShowSchools = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-2">All Schools</h2>
             <p className="text-muted-foreground">
-              {mockSchools.length} schools found
+              {filteredSchools.length} of {schools.length} schools found
             </p>
           </div>
           
-          <Badge variant="secondary" className="px-4 py-2">
-            <School className="h-4 w-4 mr-2" />
-            Total: {mockSchools.length}
-          </Badge>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search schools..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full sm:w-64"
+              />
+            </div>
+            
+            <select
+              value={stateFilter}
+              onChange={(e) => setStateFilter(e.target.value)}
+              className="px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">All States</option>
+              {uniqueStates.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+            
+            <Badge variant="secondary" className="px-4 py-2 whitespace-nowrap">
+              <School className="h-4 w-4 mr-2" />
+              Total: {schools.length}
+            </Badge>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockSchools.map((school) => (
+          {filteredSchools.map((school) => (
             <Card 
               key={school.id} 
               className="group hover:shadow-hover transition-all duration-300 border-0 shadow-card hover:-translate-y-1"
@@ -150,18 +142,47 @@ const ShowSchools = () => {
                   </div>
                 </div>
                 
-                <Button 
-                  className="w-full bg-gradient-primary hover:opacity-90 transition-all shadow-sm"
-                  size="sm"
-                >
-                  View Details
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1 bg-gradient-primary hover:opacity-90 transition-all shadow-sm"
+                    size="sm"
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteSchool(school.id, school.name)}
+                    className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {mockSchools.length === 0 && (
+        {filteredSchools.length === 0 && schools.length > 0 && (
+          <div className="text-center py-12">
+            <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">No matching schools</h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your search criteria or filters.
+            </p>
+            <Button 
+              onClick={() => {
+                setSearchTerm("");
+                setStateFilter("");
+              }}
+              variant="outline"
+            >
+              Clear Filters
+            </Button>
+          </div>
+        )}
+
+        {schools.length === 0 && (
           <div className="text-center py-12">
             <School className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">No schools found</h3>
@@ -169,7 +190,10 @@ const ShowSchools = () => {
               Be the first to add a school to our directory.
             </p>
             <Button asChild className="bg-gradient-primary">
-              <a href="/add-school">Add First School</a>
+              <a href="/add-school">
+                <Plus className="h-4 w-4 mr-2" />
+                Add First School
+              </a>
             </Button>
           </div>
         )}

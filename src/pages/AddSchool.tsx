@@ -2,14 +2,16 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "@/hooks/use-toast";
-import { Upload, School, MapPin, Mail, Phone } from "lucide-react";
+import { Upload, School, MapPin, Mail, Phone, CheckCircle } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { useSchools } from "@/contexts/SchoolContext";
 
 const schoolFormSchema = z.object({
   name: z.string().min(2, "School name must be at least 2 characters"),
@@ -26,6 +28,8 @@ type SchoolFormData = z.infer<typeof schoolFormSchema>;
 const AddSchool = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { addSchool } = useSchools();
+  const navigate = useNavigate();
 
   const form = useForm<SchoolFormData>({
     resolver: zodResolver(schoolFormSchema),
@@ -53,19 +57,51 @@ const AddSchool = () => {
   const onSubmit = async (data: SchoolFormData) => {
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log("School data:", data);
+    try {
+      // Prepare school data
+      const schoolData = {
+        name: data.name,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        contact: data.contact,
+        email_id: data.email_id,
+        image: imagePreview || `https://images.unsplash.com/photo-${Math.floor(Math.random() * 1000000)}?auto=format&fit=crop&w=400&h=300`,
+      };
+
+      // Add school to context/localStorage
+      addSchool(schoolData);
+      
+      console.log("School data saved:", schoolData);
+      
       toast({
         title: "Success!",
-        description: "School has been added successfully.",
+        description: (
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <span>School has been added successfully!</span>
+          </div>
+        ),
       });
       
       // Reset form
       form.reset();
       setImagePreview(null);
+      
+      // Navigate to schools list after a short delay
+      setTimeout(() => {
+        navigate('/schools');
+      }, 1500);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add school. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
